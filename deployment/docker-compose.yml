@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  go-app:
+    container_name: go-auth-app
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    environment:
+      DATABASE_URL: "host=go_db user=postgres password=postgres dbname=postgres sslmode=disable"
+    depends_on:
+      go_db:
+        condition: service_healthy
+    ports:
+      - "44044:44044"
+
+  go_db:
+    container_name: go_db
+    image: postgres:12
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      retries: 5
