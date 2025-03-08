@@ -40,7 +40,7 @@ func New(log *slog.Logger, storageUsecase usecase.StorageUsecase, port int) *App
 		logging.UnaryServerInterceptor(interceptorLogger(log), loggingOpts...),
 	))
 
-	storage_grpc.Register(gRPCServer, storageUsecase)
+	storagegrpc.Register(gRPCServer, storageUsecase)
 
 	return &App{
 		log:        log,

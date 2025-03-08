@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	_ "modernc.org/sqlite"
 	"storage-file-service/internal/domain"
 )
 
@@ -25,7 +26,7 @@ func NewStorageRepository(storagePath string) (domain.StorageRepository, error) 
 func (r *storageRepository) FindAll(ctx context.Context) ([]*domain.StorageFile, error) {
 	const op = "repository.sqlite.findAll"
 
-	stmt, err := r.db.Prepare("SELECT * FROM storage_file")
+	stmt, err := r.db.Prepare("select * from storage_file")
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

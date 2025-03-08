@@ -1,4 +1,4 @@
-package storage_grpc
+package storagegrpc
 
 import (
 	"context"
