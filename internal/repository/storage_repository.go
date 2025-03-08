@@ -26,7 +26,7 @@ func NewStorageRepository(storagePath string) (domain.StorageRepository, error) 
 func (r *storageRepository) FindAll(ctx context.Context) ([]*domain.StorageFile, error) {
 	const op = "repository.sqlite.findAll"
 
-	stmt, err := r.db.Prepare("select * from storage_file")
+	stmt, err := r.db.Prepare("select id, file_name, insert_date, update_date, delete_date, file_path, file_hash from storage_file where delete_date is null")
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -42,7 +42,7 @@ func (r *storageRepository) FindAll(ctx context.Context) ([]*domain.StorageFile,
 
 	for rows.Next() {
 		var storageFile domain.StorageFile
-		if err := rows.Scan(&storageFile.Id, &storageFile.Name, &storageFile.InsertDate, &storageFile.UpdateDate, &storageFile.FilePath, &storageFile.FileHash); err != nil {
+		if err := rows.Scan(&storageFile.Id, &storageFile.Name, &storageFile.InsertDate, &storageFile.UpdateDate, &storageFile.DeleteDate, &storageFile.FilePath, &storageFile.FileHash); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 		storageFiles = append(storageFiles, &storageFile)
@@ -53,4 +53,26 @@ func (r *storageRepository) FindAll(ctx context.Context) ([]*domain.StorageFile,
 	}
 
 	return storageFiles, nil
+}
+
+func (r *storageRepository) InsertFile(ctx context.Context, file *domain.StorageFile) (uint, error) {
+	const op = "repository.sqlite.insertFile"
+
+	stmt, err := r.db.Prepare(`
+		INSERT INTO storage_file (file_name, insert_date, update_date, file_path, file_hash)
+		VALUES ($1, $2, $3, $4, $5) RETURNING id
+	`)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRowContext(ctx, file.Name, file.InsertDate, file.UpdateDate, file.FilePath, file.FileHash)
+
+	var id uint
+	err = row.Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+	return id, nil
 }
