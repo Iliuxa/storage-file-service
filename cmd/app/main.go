@@ -16,7 +16,7 @@ const (
 )
 
 func main() {
-	cfg := config.MustLoad()
+	cfg := config.MustLoad("")
 	log := setupLogger(cfg.Env)
 
 	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath)

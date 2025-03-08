@@ -8,10 +8,9 @@ import (
 )
 
 type Config struct {
-	Env            string     `yaml:"env" env-default:"local"`
-	StoragePath    string     `yaml:"storage_path" env-required:"true"`
-	GRPC           GRPCConfig `yaml:"grpc"`
-	MigrationsPath string
+	Env         string     `yaml:"env" env-default:"local"`
+	StoragePath string     `yaml:"storage_path" env-required:"true"`
+	GRPC        GRPCConfig `yaml:"grpc"`
 	// todo количество одновременных запросов
 }
 
@@ -20,8 +19,8 @@ type GRPCConfig struct {
 	Timeout time.Duration `yaml:"timeout"`
 }
 
-func MustLoad() *Config {
-	configPath := fetchConfigPath()
+func MustLoad(defaultPath string) *Config {
+	configPath := fetchConfigPath(defaultPath)
 	if configPath == "" {
 		panic("config path is empty")
 	}
@@ -39,7 +38,11 @@ func MustLoad() *Config {
 	return &cfg
 }
 
-func fetchConfigPath() string {
+func fetchConfigPath(defaultPath string) string {
+	if defaultPath == "" {
+		defaultPath = "config/config.yaml"
+	}
+
 	var res string
 	flag.StringVar(&res, "config", "", "path to config file")
 	flag.Parse()
@@ -47,7 +50,7 @@ func fetchConfigPath() string {
 	if res == "" {
 		res = os.Getenv("CONFIG_PATH")
 		if res == "" {
-			res = "config/config.yaml"
+			res = defaultPath
 		}
 	}
 
