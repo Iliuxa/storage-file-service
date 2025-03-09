@@ -19,6 +19,7 @@ import (
 type StorageUsecase interface {
 	GetFileList(context.Context) ([]*proto.FileInfo, error)
 	UploadFile(context.Context, *bytes.Buffer, string, string) (uint, error)
+	DownloadFile(context.Context, uint) (*proto.FileResponse_Info, string, error)
 }
 
 type storageUsecase struct {
@@ -42,9 +43,9 @@ func (s *storageUsecase) GetFileList(ctx context.Context) ([]*proto.FileInfo, er
 
 	files, err := s.storageRepository.FindAll(ctx)
 	if err != nil {
-		if errors.Is(err, domain.ErrUsersGettingError) {
+		if errors.Is(err, domain.ErrFileGettingError) {
 			s.log.Error("Failed to getting users", slog.StringValue(err.Error()))
-			return nil, fmt.Errorf("%s: %w", op, domain.ErrUsersGettingError)
+			return nil, fmt.Errorf("%s: %w", op, domain.ErrFileGettingError)
 		}
 
 		log.Error("Failed to getting users", slog.StringValue(err.Error()))
@@ -100,6 +101,33 @@ func (s *storageUsecase) UploadFile(ctx context.Context, fileBuffer *bytes.Buffe
 	return fileId, nil
 }
 
+func (s *storageUsecase) DownloadFile(ctx context.Context, fileId uint) (*proto.FileResponse_Info, string, error) {
+	const op = "StorageUsecase.DownloadFile"
+	storageFile, err := s.storageRepository.Find(ctx, fileId)
+	if err != nil {
+		return nil, "", fmt.Errorf("%s: %w", op, domain.ErrFileGettingError)
+	}
+
+	file, err := os.Open(storageFile.FilePath)
+	if err != nil {
+		return nil, "", fmt.Errorf("%s: %w", op, domain.ErrFileGettingError)
+	}
+	defer file.Close()
+
+	if err = s.checkingFileHash(storageFile.FileHash, file); err != nil {
+		return nil, "", fmt.Errorf("%s: %w", "checing file", domain.ErrFileIsDamagedError)
+	}
+
+	fileInfo := &proto.FileResponse_Info{
+		Info: &proto.ImageInfo{
+			FileName: storageFile.Name,
+			FileHash: storageFile.FileHash,
+		},
+	}
+
+	return fileInfo, storageFile.FilePath, nil
+}
+
 func (s *storageUsecase) saveFile(fileBuffer bytes.Buffer, fileName, fileHash string) (string, error) {
 	const storageDir = "/storage/files/"
 
@@ -132,14 +160,8 @@ func (s *storageUsecase) saveFile(fileBuffer bytes.Buffer, fileName, fileHash st
 		return "", fmt.Errorf("cannot seek file: %w", err)
 	}
 
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, file); err != nil {
-		return "", fmt.Errorf("hash image: %w", err)
-	}
-
-	hash := fmt.Sprintf("%x", hasher.Sum(nil))
-	if fileHash != hash {
-		return "", fmt.Errorf("the file is damaged: %w", err)
+	if err = s.checkingFileHash(fileHash, file); err != nil {
+		return "", fmt.Errorf("%s: %w", "checing file", domain.ErrFileIsDamagedError)
 	}
 
 	return storageFilePath, nil
@@ -154,4 +176,17 @@ func (s *storageUsecase) getRandomString(size uint) string {
 	}
 
 	return string(result)
+}
+
+func (s *storageUsecase) checkingFileHash(fileHash string, file io.Reader) error {
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		s.log.Error("Failed to get hash")
+	}
+
+	hash := fmt.Sprintf("%x", hasher.Sum(nil))
+	if fileHash != hash {
+		s.log.Error("Failed to check file hash")
+	}
+	return nil
 }

@@ -43,9 +43,12 @@ message FileInfo {
 }
 
 message FileRequest {
-  int64 file_id = 1;
+  uint64 file_id = 1;
 }
 
 message FileResponse {
-  bytes chunk = 1;
+  oneof data {
+    ImageInfo info = 1;
+    bytes chunkData = 2;
+  };
 }

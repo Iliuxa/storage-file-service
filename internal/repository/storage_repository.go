@@ -76,3 +76,26 @@ func (r *storageRepository) InsertFile(ctx context.Context, file *domain.Storage
 	}
 	return id, nil
 }
+
+func (r *storageRepository) Find(ctx context.Context, id uint) (*domain.StorageFile, error) {
+	const op = "repository.sqlite.find"
+
+	stmt, err := r.db.Prepare(`
+		select id, file_name, insert_date, update_date, delete_date, file_path, file_hash 
+		from storage_file 
+		where id = $1 and delete_date is null
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRowContext(ctx, id)
+
+	var storageFile domain.StorageFile
+	if err = row.Scan(&storageFile.Id, &storageFile.Name, &storageFile.InsertDate, &storageFile.UpdateDate, &storageFile.DeleteDate, &storageFile.FilePath, &storageFile.FileHash); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &storageFile, nil
+}
