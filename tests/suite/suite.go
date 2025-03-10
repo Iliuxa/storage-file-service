@@ -19,7 +19,6 @@ type Suite struct {
 
 func New(t *testing.T) (context.Context, *Suite) {
 	t.Helper()
-	t.Parallel()
 
 	cfg := config.MustLoad("./../config/config.yaml")
 

@@ -1,17 +1,17 @@
 package config
 
 import (
-	"flag"
 	"github.com/ilyakaznacheev/cleanenv"
 	"os"
 	"time"
 )
 
 type Config struct {
-	Env         string     `yaml:"env" env-default:"local"`
-	StoragePath string     `yaml:"storage_path" env-required:"true"`
-	GRPC        GRPCConfig `yaml:"grpc"`
-	// todo количество одновременных запросов
+	Env                 string     `yaml:"env" env-default:"local"`
+	StoragePath         string     `yaml:"storage_path" env-required:"true"`
+	GRPC                GRPCConfig `yaml:"grpc"`
+	ListLimit           int        `yaml:"listLimit"`
+	DownloadUploadLimit int        `yaml:"downloadUploadLimit"`
 }
 
 type GRPCConfig struct {
@@ -42,17 +42,5 @@ func fetchConfigPath(defaultPath string) string {
 	if defaultPath == "" {
 		defaultPath = "config/config.yaml"
 	}
-
-	var res string
-	flag.StringVar(&res, "config", "", "path to config file")
-	flag.Parse()
-
-	if res == "" {
-		res = os.Getenv("CONFIG_PATH")
-		if res == "" {
-			res = defaultPath
-		}
-	}
-
-	return res
+	return defaultPath
 }

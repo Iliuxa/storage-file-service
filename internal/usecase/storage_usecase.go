@@ -43,9 +43,9 @@ func (s *storageUsecase) GetFileList(ctx context.Context) ([]*proto.FileInfo, er
 
 	files, err := s.storageRepository.FindAll(ctx)
 	if err != nil {
-		if errors.Is(err, domain.ErrFileGettingError) {
-			s.log.Error("Failed to getting users", slog.StringValue(err.Error()))
-			return nil, fmt.Errorf("%s: %w", op, domain.ErrFileGettingError)
+		if errors.Is(err, domain.ErrFileNotFound) {
+			s.log.Error("file mot found ", slog.StringValue(err.Error()))
+			return nil, fmt.Errorf("%s: %w", op, domain.ErrFileNotFound)
 		}
 
 		log.Error("Failed to getting users", slog.StringValue(err.Error()))
@@ -103,19 +103,24 @@ func (s *storageUsecase) UploadFile(ctx context.Context, fileBuffer *bytes.Buffe
 
 func (s *storageUsecase) DownloadFile(ctx context.Context, fileId uint) (*proto.FileResponse_Info, string, error) {
 	const op = "StorageUsecase.DownloadFile"
+	log := s.log.With(
+		slog.String("op", op),
+	)
+	log.Info("Downloading file")
+
 	storageFile, err := s.storageRepository.Find(ctx, fileId)
 	if err != nil {
-		return nil, "", fmt.Errorf("%s: %w", op, domain.ErrFileGettingError)
+		return nil, "", fmt.Errorf("%s: %w", op, domain.ErrFileNotFound)
 	}
 
 	file, err := os.Open(storageFile.FilePath)
 	if err != nil {
-		return nil, "", fmt.Errorf("%s: %w", op, domain.ErrFileGettingError)
+		return nil, "", fmt.Errorf("%s: %w", op, domain.ErrFileNotFound)
 	}
 	defer file.Close()
 
 	if err = s.checkingFileHash(storageFile.FileHash, file); err != nil {
-		return nil, "", fmt.Errorf("%s: %w", "checing file", domain.ErrFileIsDamagedError)
+		return nil, "", fmt.Errorf("%s: %w", "checing file", domain.ErrFileIsDamaged)
 	}
 
 	fileInfo := &proto.FileResponse_Info{
@@ -161,7 +166,7 @@ func (s *storageUsecase) saveFile(fileBuffer bytes.Buffer, fileName, fileHash st
 	}
 
 	if err = s.checkingFileHash(fileHash, file); err != nil {
-		return "", fmt.Errorf("%s: %w", "checing file", domain.ErrFileIsDamagedError)
+		return "", fmt.Errorf("%s: %w", "checing file", domain.ErrFileIsDamaged)
 	}
 
 	return storageFilePath, nil

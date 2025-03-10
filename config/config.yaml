@@ -1,5 +1,7 @@
 env: "local"
 storage_path: "./storage/storage_file.db"
+listLimit: 10
+downloadUploadLimit: 100
 grpc:
   port: 44044
   timeout: 10h

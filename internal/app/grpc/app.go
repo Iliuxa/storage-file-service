@@ -20,7 +20,7 @@ type App struct {
 	port       int
 }
 
-func New(log *slog.Logger, storageUsecase usecase.StorageUsecase, port int) *App {
+func New(log *slog.Logger, storageUsecase usecase.StorageUsecase, port, listLimit, downloadUploadLimit int) *App {
 	recoveryOpts := []recovery.Option{
 		recovery.WithRecoveryHandler(func(p interface{}) error {
 			log.Error("Recover from panic", slog.Any("panic", p))
@@ -40,7 +40,7 @@ func New(log *slog.Logger, storageUsecase usecase.StorageUsecase, port int) *App
 		logging.UnaryServerInterceptor(interceptorLogger(log), loggingOpts...),
 	))
 
-	storagegrpc.Register(gRPCServer, storageUsecase)
+	storagegrpc.Register(gRPCServer, storageUsecase, listLimit, downloadUploadLimit)
 
 	return &App{
 		log:        log,

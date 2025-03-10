@@ -22,13 +22,13 @@ type serverApi struct {
 	listSemaphore     chan struct{}
 }
 
-func Register(gRPCServer *grpc.Server, storage usecase.StorageUsecase) {
+func Register(gRPCServer *grpc.Server, storage usecase.StorageUsecase, listLimit, downloadUploadLimit int) {
 	proto.RegisterFileServiceServer(
 		gRPCServer,
 		&serverApi{
 			storage:           storage,
-			downloadSemaphore: make(chan struct{}, 10),
-			listSemaphore:     make(chan struct{}, 100),
+			downloadSemaphore: make(chan struct{}, listLimit),
+			listSemaphore:     make(chan struct{}, downloadUploadLimit),
 		},
 	)
 }
@@ -42,7 +42,7 @@ func (s *serverApi) GetFileList(
 
 	files, err := s.storage.GetFileList(ctx)
 	if err != nil {
-		if errors.Is(err, domain.ErrFileGettingError) {
+		if errors.Is(err, domain.ErrFileNotFound) {
 			return nil, status.Error(codes.Internal, "Failed to getting file")
 		}
 		return nil, status.Error(codes.Internal, "Failed to getting file")
