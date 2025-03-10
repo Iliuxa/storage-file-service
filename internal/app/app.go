@@ -11,13 +11,13 @@ type App struct {
 	GRPCServer *grpcapp.App
 }
 
-func New(log *slog.Logger, grpcPort int, storagePath string) *App {
+func New(log *slog.Logger, grpcPort int, storagePath string, listLimit, downloadUploadLimit int) *App {
 	storageRepository, err := repository.NewStorageRepository(storagePath)
 	if err != nil {
 		panic(err)
 	}
 	storageUsecase := usecase.NewStorageUsecase(storageRepository, log)
-	grpcApp := grpcapp.New(log, storageUsecase, grpcPort)
+	grpcApp := grpcapp.New(log, storageUsecase, grpcPort, listLimit, downloadUploadLimit)
 
 	return &App{GRPCServer: grpcApp}
 }

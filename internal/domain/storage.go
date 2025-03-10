@@ -17,8 +17,8 @@ type StorageFile struct {
 }
 
 var (
-	ErrFileGettingError   = errors.New("file not found")
-	ErrFileIsDamagedError = errors.New("the file is damaged")
+	ErrFileNotFound  = errors.New("file not found")
+	ErrFileIsDamaged = errors.New("the file is damaged")
 )
 
 type StorageRepository interface {

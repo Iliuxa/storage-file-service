@@ -42,14 +42,18 @@ func (r *storageRepository) FindAll(ctx context.Context) ([]*domain.StorageFile,
 
 	for rows.Next() {
 		var storageFile domain.StorageFile
-		if err := rows.Scan(&storageFile.Id, &storageFile.Name, &storageFile.InsertDate, &storageFile.UpdateDate, &storageFile.DeleteDate, &storageFile.FilePath, &storageFile.FileHash); err != nil {
+		if err = rows.Scan(&storageFile.Id, &storageFile.Name, &storageFile.InsertDate, &storageFile.UpdateDate, &storageFile.DeleteDate, &storageFile.FilePath, &storageFile.FileHash); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 		storageFiles = append(storageFiles, &storageFile)
 	}
 
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if len(storageFiles) == 0 {
+		return nil, domain.ErrFileNotFound
 	}
 
 	return storageFiles, nil
