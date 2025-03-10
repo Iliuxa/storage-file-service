@@ -43,7 +43,7 @@ func (s *serverApi) GetFileList(
 	files, err := s.storage.GetFileList(ctx)
 	if err != nil {
 		if errors.Is(err, domain.ErrFileNotFound) {
-			return nil, status.Error(codes.Internal, "Failed to getting file")
+			return nil, status.Error(codes.Internal, domain.ErrFileNotFound.Error())
 		}
 		return nil, status.Error(codes.Internal, "Failed to getting file")
 	}
@@ -58,7 +58,7 @@ func (s *serverApi) UploadFile(
 
 	req, err := stream.Recv()
 	if err != nil {
-		panic(333)
+		return status.Error(codes.Internal, "failed to getting package")
 	}
 	fileName := req.GetInfo().GetFileName()
 	fileHash := req.GetInfo().GetFileHash()
@@ -68,7 +68,7 @@ func (s *serverApi) UploadFile(
 	for {
 		err = contextError(stream.Context())
 		if err != nil {
-			return err
+			return status.Error(codes.Internal, "failed to getting package")
 		}
 
 		req, err = stream.Recv()
@@ -89,7 +89,7 @@ func (s *serverApi) UploadFile(
 
 	fileId, err := s.storage.UploadFile(stream.Context(), &imageData, fileName, fileHash)
 	if err != nil {
-		return status.Error(codes.Internal, "Failed to getting file")
+		return status.Error(codes.Internal, "failed to getting file")
 	}
 
 	err = stream.SendAndClose(&proto.UploadResponse{Id: uint64(fileId)})
@@ -108,17 +108,17 @@ func (s *serverApi) DownloadFile(
 
 	fileInfo, filePath, err := s.storage.DownloadFile(stream.Context(), uint(in.GetFileId()))
 	if err != nil {
-		return status.Error(codes.Internal, "Failed to download file")
+		return status.Error(codes.Internal, "failed to download file")
 	}
 
 	err = stream.Send(&proto.FileResponse{Data: fileInfo})
 	if err != nil {
-		return status.Error(codes.Internal, "Failed to download file")
+		return status.Error(codes.Internal, "failed to download file")
 	}
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return status.Error(codes.Internal, "Failed to download file")
+		return status.Error(codes.Internal, "failed to download file")
 	}
 	defer file.Close()
 
